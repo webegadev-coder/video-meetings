@@ -20,6 +20,9 @@ export default defineNuxtConfig({
     }
   },
   vite: {
+    optimizeDeps: {
+      include: ['@vue/devtools-core']
+    },
     server: {
       proxy: {
         '/api': {
