@@ -1,0 +1,16 @@
+{
+  // Enable Copilot Agent capabilities
+  "chat.agent.enabled": true,
+
+  "chat.useAgentSkills": true,
+
+  // Toggle Model Context Protocol (MCP) server access
+  "chat.mcp.access": true,
+
+  // Prevent Copilot from automatically executing risky terminal commands
+  "chat.tools.terminal.autoApprove": {
+    "rm": false,   // Force manual confirmation for deletion commands
+    "del": false,
+    "eval": false
+  },
+}

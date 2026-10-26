@@ -1,5 +1,3 @@
 <template>
-  <div>
-    <StartComponent />
-  </div>
+  <NuxtPage />
 </template>
