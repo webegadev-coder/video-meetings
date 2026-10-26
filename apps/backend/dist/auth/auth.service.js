@@ -7,31 +7,76 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException, } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../user/user.entity.js';
 let AuthService = class AuthService {
     jwtService;
-    constructor(jwtService) {
+    userRepository;
+    constructor(jwtService, userRepository) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
-    demoUser = {
-        id: 'user-1',
-        email: 'user@example.com',
-        name: 'Demo User',
-    };
-    login({ email, password }) {
-        if (email !== this.demoUser.email || password !== '123456') {
+    async onModuleInit() {
+        await this.ensureDefaultUser();
+    }
+    async ensureDefaultUser() {
+        const existing = await this.userRepository.findOne({ where: { email: 'user@example.com' } });
+        if (!existing) {
+            await this.userRepository.save(this.userRepository.create({
+                email: 'user@example.com',
+                password: '123456',
+                name: 'Demo User',
+            }));
+        }
+    }
+    toPublicUser(user) {
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+        };
+    }
+    async login({ email, password }) {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (!user || user.password !== password) {
             throw new UnauthorizedException('Invalid email or password');
         }
         const payload = {
-            sub: this.demoUser.id,
-            email: this.demoUser.email,
-            name: this.demoUser.name,
+            sub: user.id,
+            email: user.email,
+            name: user.name,
         };
         return {
             access_token: this.jwtService.sign(payload),
-            user: this.demoUser,
+            user: this.toPublicUser(user),
         };
+    }
+    async listUsers() {
+        const users = await this.userRepository.find();
+        return users.map((user) => this.toPublicUser(user));
+    }
+    async createUser(dto) {
+        const existing = await this.userRepository.findOne({ where: { email: dto.email } });
+        if (existing) {
+            throw new ConflictException('User with this email already exists');
+        }
+        const created = this.userRepository.create(dto);
+        const saved = await this.userRepository.save(created);
+        return this.toPublicUser(saved);
+    }
+    async deleteUser(id) {
+        const user = await this.userRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        await this.userRepository.remove(user);
+        return this.toPublicUser(user);
     }
     verify(token) {
         return this.jwtService.verify(token);
@@ -39,7 +84,9 @@ let AuthService = class AuthService {
 };
 AuthService = __decorate([
     Injectable(),
-    __metadata("design:paramtypes", [JwtService])
+    __param(1, InjectRepository(User)),
+    __metadata("design:paramtypes", [JwtService,
+        Repository])
 ], AuthService);
 export { AuthService };
 //# sourceMappingURL=auth.service.js.map

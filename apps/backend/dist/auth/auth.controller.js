@@ -10,11 +10,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Body, Controller, Get, Post, UnauthorizedException, UseGuards, } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UnauthorizedException, UseGuards, } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { LoginDto } from './login.dto.js';
+class CreateUserDto {
+    email;
+    password;
+    name;
+}
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -22,6 +27,15 @@ let AuthController = class AuthController {
     }
     login(dto) {
         return this.authService.login(dto);
+    }
+    listUsers() {
+        return this.authService.listUsers();
+    }
+    createUser(dto) {
+        return this.authService.createUser(dto);
+    }
+    deleteUser(id) {
+        return this.authService.deleteUser(id);
     }
     getProfile(user) {
         if (!user) {
@@ -39,6 +53,26 @@ __decorate([
     __metadata("design:paramtypes", [LoginDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "login", null);
+__decorate([
+    Get('users'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "listUsers", null);
+__decorate([
+    Post('users'),
+    __param(0, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [CreateUserDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "createUser", null);
+__decorate([
+    Delete('users/:id'),
+    __param(0, Param('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "deleteUser", null);
 __decorate([
     UseGuards(JwtAuthGuard),
     Get('profile'),

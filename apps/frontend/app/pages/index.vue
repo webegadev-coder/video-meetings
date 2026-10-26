@@ -21,7 +21,10 @@ const logout = () => {
       <template #title>
         <div class="flex items-center justify-between gap-3">
           <span class="text-2xl font-semibold">Dashboard</span>
-          <Button label="Logout" severity="secondary" outlined @click="logout" />
+          <div class="flex gap-2">
+            <Button label="Users" severity="secondary" outlined @click="navigateTo('/users')" />
+            <Button label="Logout" severity="secondary" outlined @click="logout" />
+          </div>
         </div>
       </template>
 
