@@ -3,25 +3,20 @@ import { onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
-import api from '~/utils/axios'
+import { authService, type AuthUser } from '~/service/auth.service'
 
 const email = ref('user@example.com')
 const password = ref('123456')
 const token = ref('')
-const user = ref<{ id: string; email: string; name: string } | null>(null)
+const user = ref<AuthUser | null>(null)
 const error = ref('')
 const loading = ref(false)
 
 const getStoredToken = () => localStorage.getItem('jwt_token') ?? ''
 
 const loadProfile = async (jwt: string) => {
-  const { data } = await api.get<{ user: { id: string; email: string; name: string } }>('/auth/profile', {
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-    },
-  })
-
-  user.value = data.user
+  const { user: profileUser } = await authService.getProfile(jwt)
+  user.value = profileUser
 }
 
 const login = async () => {
@@ -29,14 +24,14 @@ const login = async () => {
   error.value = ''
 
   try {
-    const { data } = await api.post<{ access_token: string; user: { id: string; email: string; name: string } }>('/auth/login', {
+    const { access_token, user: authUser } = await authService.login({
       email: email.value,
       password: password.value,
     })
 
-    token.value = data.access_token
+    token.value = access_token
     localStorage.setItem('jwt_token', token.value)
-    user.value = data.user
+    user.value = authUser
     await loadProfile(token.value)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Authorization failed'

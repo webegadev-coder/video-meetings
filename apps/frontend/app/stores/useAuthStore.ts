@@ -1,20 +1,6 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '~/utils/axios'
-
-interface User {
-  id: string
-  email: string
-  name: string
-}
-
-interface AuthResponse {
-  access_token: string
-  user: User
-}
-
-interface ProfileResponse {
-  user: User
-}
+import { authService, type AuthUser } from '~/service/auth.service'
 
 const getStoredToken = () => {
   if (!import.meta.client || typeof localStorage === 'undefined') {
@@ -26,9 +12,10 @@ const getStoredToken = () => {
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>('')
-  const user = ref<User | null>(null)
+  const user = ref<AuthUser | null>(null)
   const loading = ref(false)
   const error = ref('')
+  const isHydrated = ref(false)
 
   const isAuthenticated = computed(() => Boolean(token.value))
 
@@ -49,10 +36,10 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const { data } = await api.post<AuthResponse>('/auth/login', { email, password })
+      const { access_token, user: authUser } = await authService.login({ email, password })
 
-      setToken(data.access_token)
-      user.value = data.user
+      setToken(access_token)
+      user.value = authUser
       await loadProfile()
       return true
     } catch (err) {
@@ -73,8 +60,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      const { data } = await api.get<ProfileResponse>('/auth/profile')
-      user.value = data.user
+      const { user: profileUser } = await authService.getProfile(token.value)
+      user.value = profileUser
     } catch {
       setToken('')
       user.value = null
@@ -86,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
     setToken('')
     user.value = null
     error.value = ''
+    isHydrated.value = true
   }
 
   const hydrate = async () => {
@@ -97,6 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (!token.value) {
+      isHydrated.value = true
       return
     }
 
@@ -104,11 +93,9 @@ export const useAuthStore = defineStore('auth', () => {
       await loadProfile()
     } catch {
       logout()
+    } finally {
+      isHydrated.value = true
     }
-  }
-
-  if (import.meta.client) {
-    token.value = getStoredToken()
   }
 
   return {
@@ -116,6 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     loading,
     error,
+    isHydrated,
     isAuthenticated,
     login,
     loadProfile,

@@ -20,7 +20,6 @@ watch(
       navigateTo('/')
     }
   },
-  { immediate: true },
 )
 
 const submit = async () => {
